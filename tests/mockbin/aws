@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Minimal stand-in for the AWS CLI used by tests/test-rolling-rollout.sh.
+# Set FAIL_ON=<instance-id> to make every SSM command on that instance fail.
+args="$*"
+case "$args" in
+  *describe-instance-information*) echo Online ;;
+  *send-command*) echo "cmd-$RANDOM" ;;
+  *get-command-invocation*--query*)
+     if [[ -n "${FAIL_ON:-}" && "$args" == *"$FAIL_ON"* ]]; then echo Failed; else echo Success; fi ;;
+  *get-command-invocation*) echo '{"StandardOutputContent":"remote output ok","StandardErrorContent":""}' ;;
+  *describe-target-health*) echo healthy ;;
+esac
