@@ -1,0 +1,23 @@
+# Rollout run logs and command outputs
+logs/
+*.log
+rollout-*.json
+
+# Local AWS / environment overrides — never commit
+.env
+.env.*
+*.pem
+*.key
+
+# Editor and OS noise
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Terraform (reserved for a future module)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!example.tfvars
