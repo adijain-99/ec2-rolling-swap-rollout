@@ -1,0 +1,37 @@
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "cwagent"
+  },
+  "metrics": {
+    "namespace": "CWAgent",
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}",
+      "AutoScalingGroupName": "${aws:AutoScalingGroupName}"
+    },
+    "aggregation_dimensions": [
+      ["InstanceId"],
+      ["AutoScalingGroupName"]
+    ],
+    "metrics_collected": {
+      "mem": {
+        "measurement": [
+          "mem_used_percent",
+          "mem_available_percent"
+        ]
+      },
+      "swap": {
+        "measurement": [
+          "swap_used_percent",
+          "swap_used",
+          "swap_free"
+        ]
+      },
+      "disk": {
+        "resources": ["/"],
+        "measurement": ["used_percent"],
+        "ignore_file_system_types": ["sysfs", "devtmpfs", "tmpfs"]
+      }
+    }
+  }
+}
