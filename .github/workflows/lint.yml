@@ -1,0 +1,55 @@
+name: lint-and-test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck
+        run: shellcheck -x scripts/*.sh tests/*.sh tests/mockbin/aws
+
+      - name: yamllint
+        run: |
+          pip install --quiet yamllint
+          yamllint -c .yamllint.yml .
+
+      - name: markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          config: .markdownlint.json
+          globs: "**/*.md"
+
+      - name: SSM document is in sync with configure-swap.sh
+        run: ./scripts/build-ssm-document.sh --check
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rollout tests (mock AWS CLI)
+        run: ./tests/test-rolling-rollout.sh
+
+      - name: Swap scripts end-to-end on the runner
+        run: |
+          # GitHub runners ship with their own swap; disable it so preflight starts clean.
+          sudo swapoff -a
+          export SWAP_FILE=/ci-swapfile SWAP_SIZE_MIB=64 MIN_FREE_HEADROOM_MIB=0
+          sudo -E ./scripts/preflight.sh
+          sudo -E ./scripts/configure-swap.sh
+          sudo -E ./scripts/configure-swap.sh   # idempotency
+          sudo -E ./scripts/verify-swap.sh
+          sudo -E ./scripts/rollback-swap.sh
+          if sudo -E ./scripts/verify-swap.sh; then
+            echo "verify should fail after rollback" >&2; exit 1
+          fi
